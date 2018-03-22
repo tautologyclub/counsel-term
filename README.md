@@ -26,6 +26,6 @@ present.  More options probably coming at some point.
 
 ## Note
 This package has no association with counsel or ivy apart from using the ivy api
-and kinda feeling lika a counsel package.  The author admits to a slighy
+and kinda feeling lika a counsel package.  The author admits to a slightly
 fanboy-ism towards their creator however -- support him on Patreon!  More
 instructions on his site, oremacs.com.

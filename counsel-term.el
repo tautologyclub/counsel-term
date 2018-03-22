@@ -95,10 +95,11 @@
   "If CAND is a dir, cd to it; else open it with 'find-file'."
   (if (string-match-p "/$" cand)
       (progn    ;; super ugly+bad, gotta be a better way
-        (term-send-raw-string (concat "cd " cand ""))
-        (sleep-for 0.08)
-        (counsel-term-ff)
-        )
+        (let ((cur-dir default-directory))
+          (term-send-raw-string (concat "cd " cand ""))
+          (while (eq cur-dir default-directory)
+            (sit-for 0 0 t))
+          (counsel-term-ff)))
     (find-file cand)))
 
 (defun counsel-term-ff--candidates ()
@@ -130,7 +131,6 @@
       (propertize str 'face 'counsel-term-ff-dir-face)
     str))
 (ivy-set-display-transformer 'counsel-term-ff 'counsel-term-ff--transformer)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Grep your command line history
