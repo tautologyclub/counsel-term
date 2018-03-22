@@ -51,17 +51,19 @@
 ;; More instructions on his site, oremacs.com.
 
 ;;; Code:
+
 (require 'ivy)
 (require 'term)
 (require 'cl)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Recursive dir-finder, subject to improvements of course :)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun counsel-term-cd-function (dirstring)
   "Use unix util find to recursively search for a subdir matching DIRSTRING."
-  (if (< (length dirstring) 3)
-      (counsel-more-chars 3)
+  (if (< (length dirstring) 2)
+      (counsel-more-chars 2)
     (counsel--async-command
      (concat "find -type d 2>/dev/null | grep " dirstring " || echo "))
     '("" "working...")))
@@ -84,6 +86,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Pseudo-dired for people who kinda prefer the terminal
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defcustom counsel-term-ff-initial-input "^"
+  "Initial input for counsel-term-ff."
+  :type 'string
+  :group 'counsel-term)
+
 (defun counsel-term-ff--action (cand)
   "If CAND is a dir, cd to it; else open it with 'find-file'."
   (if (string-match-p "/$" cand)
@@ -107,15 +114,20 @@
   "From term-mode, find file and open it in EMACS, or cd to it in term."
   (interactive)
   (let ((ivy-fixed-height-minibuffer t) (ivy-case-fold-search nil))
-    (ivy-read "goto: " (counsel-term-ff--candidates)
-              :initial-input "^"
-              :action  'counsel-term-ff--action
-              :caller 'counsel-term-ff)))
+    (ivy-read "goto: "          (counsel-term-ff--candidates)
+              :initial-input    counsel-term-ff-initial-input
+              :action           'counsel-term-ff--action
+              :caller           'counsel-term-ff)))
+
+(defface counsel-term-ff-dir-face '((t :inherit 'font-lock-function-face))
+  "Feebleline timestamp face."
+  :group 'counsel-term)
 
 (defun counsel-term-ff--transformer (str)
   "Change color if STR is a directory."
   (if (string-match-p "/$" str)
-      (propertize str 'face '(:foreground "yellow"))
+      ;; (propertize str 'face '(:foreground "yellow"))
+      (propertize str 'face 'counsel-term-ff-dir-face)
     str))
 (ivy-set-display-transformer 'counsel-term-ff 'counsel-term-ff--transformer)
 
@@ -125,10 +137,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defcustom counsel-th-history-file "~/.bash_history"
   "The location of your history file (tildes are fine)."
-  :type 'string)
+  :type 'string
+  :group 'counsel-term)
 
 (defcustom counsel-th-filter "^\\(cd\\|ll\\|ls\\|\\\.\\\.\\|pushd\\|popd\\)"
-  "Regex filter for the uninteresting lines in the history file.")
+  "Regex filter for the uninteresting lines in the history file."
+  :type 'string
+  :group 'counsel-term)
+
+(defcustom counsel-th-initial-input "^"
+  "Initial input for counsel-term-history."
+  :type 'string
+  :group 'counsel-term)
 
 (defun counsel-th--read-lines (file)
   "Make a reversed list of lines in FILE, applying regex counsel-th-filter."
@@ -147,8 +167,8 @@
   (ivy-read "History: "
             (counsel-th--read-lines
              (expand-file-name counsel-th-history-file))
-            :initial-input "^"
-            :action 'counsel-th--action
+            :initial-input      counsel-th-initial-input
+            :action             'counsel-th--action
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
