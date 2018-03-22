@@ -98,7 +98,7 @@
         (let ((cur-dir default-directory))
           (term-send-raw-string (concat "cd " cand ""))
           (while (eq cur-dir default-directory)
-            (sit-for 0 0 t))
+            (sit-for 0 1 t))
           (counsel-term-ff)))
     (find-file cand)))
 
