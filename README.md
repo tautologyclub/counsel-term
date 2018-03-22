@@ -11,6 +11,13 @@ file you want, really) and sends the selected candidate to the terminal.  To get
 going, bind 'counsel-term-history to some nice stroke in your term-mode-map, C-r
 comes quite naturally to mind.
 
+#### Note:
+Make sure to include the following in your .bashrc to grep current session's
+history as well:
+
+    shopt -s histappend
+    PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
+
 ### counsel-term-cd
 Recursively find a directory, starting at $PWD, and cd to it.
 
