@@ -161,13 +161,19 @@
   "Send CAND to term prompt, without executing."
   (term-send-raw-string (concat "" cand)))
 
+(defun counsel-term-history--initial-input-function ()
+  "Check if term-prompt-regexp has been set and use it if so."
+  (if (string= "" term-prompt-regexp)
+      counsel-th-initial-input
+    (concat counsel-th-initial-input (term-get-old-input-default))))
+
 (defun counsel-term-history ()
   "You know, do stuff."
   (interactive)
   (ivy-read "History: "
             (counsel-th--read-lines
              (expand-file-name counsel-th-history-file))
-            :initial-input      counsel-th-initial-input
+            :initial-input      (counsel-term-history--initial-input-function)
             :action             'counsel-th--action
             ))
 
