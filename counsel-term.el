@@ -56,6 +56,20 @@
 (require 'term)
 (require 'cl)
 
+;; switch between multi-term buffers using counsel
+;-------------------------------------------------------------------------------
+(defun counsel-term-switch ()
+  (interactive)
+  (let ((ivy-ignore-buffers nil))
+    (add-hook 'ivy-ignore-buffers 'counsel-term--ignore-non-term-buffers)
+    (ivy-switch-buffer)))
+
+(defun counsel-term--ignore-non-term-buffers (bufname)
+  "Return t if BUFNAME does not correspond to term-mode buffer."
+  (let ((buf (get-buffer bufname)))
+    (not (and buf (eq (buffer-local-value 'major-mode buf) 'term-mode)))))
+;-------------------------------------------------------------------------------
+
 
 ;; switch between multi-term buffers using counsel
 ;-------------------------------------------------------------------------------
