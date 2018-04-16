@@ -57,9 +57,23 @@
 (require 'cl)
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; switch between multi-term buffers using counsel
+;-------------------------------------------------------------------------------
+(defun counsel-term--ignore-non-term-buffers (bufname)
+  "Return t if BUFNAME does not correspond to term-mode buffer."
+  (let ((buf (get-buffer bufname)))
+    (not (and buf (eq (buffer-local-value 'major-mode buf) 'term-mode)))))
+
+(defun counsel-term-switch ()
+  (interactive)
+  (let ((ivy-ignore-buffers nil))
+    (add-hook 'ivy-ignore-buffers 'counsel-term--ignore-non-term-buffers)
+    (ivy-switch-buffer)))
+;-------------------------------------------------------------------------------
+
+
 ;; Recursive dir-finder, subject to improvements of course :)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;-------------------------------------------------------------------------------
 (defun counsel-term-cd-function (dirstring)
   "Use unix util find to recursively search for a subdir matching DIRSTRING."
   (if (< (length dirstring) 2)
@@ -81,26 +95,29 @@
             :action 'counsel-term-cd-action
             :unwind #'counsel-delete-process
             :caller 'counsel-term-cd))
+;-------------------------------------------------------------------------------
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Pseudo-dired for people who kinda prefer the terminal
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;-------------------------------------------------------------------------------
 (defcustom counsel-term-ff-initial-input "^"
   "Initial input for counsel-term-ff."
   :type 'string
   :group 'counsel-term)
 
+(custom-set-variables
+ '(counsel-term-ff-initial-input ""))
 (defun counsel-term-ff--action (cand)
   "If CAND is a dir, cd to it; else open it with 'find-file'."
-  (if (string-match-p "/$" cand)
-      (progn    ;; super ugly+bad, gotta be a better way
-        (let ((cur-dir default-directory))
-          (term-send-raw-string (concat "cd " cand ""))
-          (while (eq cur-dir default-directory)
-            (sit-for 0 1 t))
-          (counsel-term-ff)))
-    (find-file cand)))
+  (with-ivy-window
+    (if (string-match-p "/$" cand)
+	(progn    ;; super ugly+bad, gotta be a better way
+	  (let ((cur-dir default-directory))
+	    (term-send-raw-string (concat " cd " cand ""))
+	    (while (eq cur-dir default-directory)
+	      (sit-for 0 1 t))
+	    (counsel-term-ff)))
+      (find-file cand))))
 
 (defun counsel-term-ff--candidates ()
   "Moo say teh cow."
@@ -114,27 +131,29 @@
 (defun counsel-term-ff ()
   "From term-mode, find file and open it in EMACS, or cd to it in term."
   (interactive)
-  (let ((ivy-fixed-height-minibuffer t) (ivy-case-fold-search nil))
-    (ivy-read "goto: "          (counsel-term-ff--candidates)
+  (let ((ivy-fixed-height-minibuffer t)
+	(ivy-case-fold-search t))
+    (ivy-read
+     default-directory         (counsel-term-ff--candidates)
               :initial-input    counsel-term-ff-initial-input
-              :action           'counsel-term-ff--action
-              :caller           'counsel-term-ff)))
+              :action          'counsel-term-ff--action
+              :caller          'counsel-term-ff)))
 
 (defface counsel-term-ff-dir-face '((t :inherit 'font-lock-function-face))
-  "Feebleline timestamp face."
+  "Face for directories in counsel-term-ff."
   :group 'counsel-term)
 
 (defun counsel-term-ff--transformer (str)
   "Change color if STR is a directory."
   (if (string-match-p "/$" str)
-      ;; (propertize str 'face '(:foreground "yellow"))
       (propertize str 'face 'counsel-term-ff-dir-face)
     str))
 (ivy-set-display-transformer 'counsel-term-ff 'counsel-term-ff--transformer)
+;-------------------------------------------------------------------------------
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Grep your command line history
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;-------------------------------------------------------------------------------
 (defcustom counsel-th-history-file "~/.bash_history"
   "The location of your history file (tildes are fine)."
   :type 'string
@@ -171,24 +190,25 @@
   "You know, do stuff."
   (interactive)
   (ivy-read "History: "
-            (counsel-th--read-lines
-             (expand-file-name counsel-th-history-file))
+            (counsel-th--read-lines (expand-file-name counsel-th-history-file))
             :initial-input      (counsel-term-history--initial-input-function)
             :action             'counsel-th--action
             ))
+;-------------------------------------------------------------------------------
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; One-stroke 'cd ..', with redo
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;-------------------------------------------------------------------------------
 (defun term-downdir ()
   "Shut up."
   (interactive)
-  (term-send-raw-string "pushd $PWD > /dev/null; cd .."))
+  (term-send-raw-string " pushd $PWD > /dev/null; cd .."))
 
 (defun term-updir ()
   "Shut up."
   (interactive)
-  (term-send-raw-string "popd > /dev/null 2>&1"))
+  (term-send-raw-string " popd > /dev/null 2>&1"))
+;-------------------------------------------------------------------------------
 
 
 (provide 'counsel-term)

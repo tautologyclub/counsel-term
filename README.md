@@ -4,6 +4,10 @@ easier.  All of them make use of two things: first, the excellent 'ivy-read' API
 and second, the fact that you can send raw control characters representing C-k,
 C-u, etc to your terminal using 'term-send-raw-string'.
 
+## Note
+This works in both ansi-term and multi-term and whatever other derived mode you
+use -- all that's needed is access to 'term-send-raw'.
+
 ## Functions
 ### counsel-term-history
 A simple utility that completing-reads your ~/.bash_history (or whatever other
