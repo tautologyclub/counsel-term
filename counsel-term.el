@@ -126,7 +126,10 @@
   "If CANDIDATE is directory, cd to it.
 Else, open it."
   (if (file-directory-p candidate)
-      (term-send-raw-string (concat " cd " candidate ""))
+      (if (eq major-mode 'term-mode)
+          (term-send-raw-string (concat " cd " candidate ""))
+        (let ((default-directory (expand-file-name candidate)))
+          (multi-term)))
     (find-file candidate)))
 
 (defun counsel-find-file-recursively ()
