@@ -133,28 +133,25 @@ Else, open it."
     (find-file candidate)))
 
 (defun counsel-find-file-recursively ()
-  "Recursively find directories and cd to them from term."
+  "Recursively find directories and cd to them from term.
+If not called from a term, open multi-term in dir."
   (interactive)
-  (ivy-read "cd: "
+  (ivy-read "file: "
             'counsel-find-file-recursively-function
             :dynamic-collection t
             :action 'counsel-find-file-recursively-action
             :unwind #'counsel-delete-process
             :caller 'counsel-find-file-recursively))
-
-
 ;-------------------------------------------------------------------------------
 
 
 ;; Pseudo-dired for people who kinda prefer the terminal
 ;-------------------------------------------------------------------------------
-(defcustom counsel-term-ff-initial-input "^"
+(defcustom counsel-term-ff-initial-input ""
   "Initial input for counsel-term-ff."
   :type 'string
   :group 'counsel-term)
 
-(custom-set-variables
- '(counsel-term-ff-initial-input ""))
 (defun counsel-term-ff--action (cand)
   "If CAND is a dir, cd to it; else open it with 'find-file'."
   (with-ivy-window
