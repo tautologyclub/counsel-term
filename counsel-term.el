@@ -88,12 +88,12 @@
 
 ;; Recursive dir-finder, subject to improvements of course :)
 ;-------------------------------------------------------------------------------
-(defun counsel-term-cd-function (dirstring)
+(defun counsel-term-cd-function (str)
   "Use unix util find to recursively search for a subdir matching DIRSTRING."
-  (if (< (length dirstring) 2)
+  (if (< (length str) 2)
       (counsel-more-chars 2)
     (counsel--async-command
-     (concat "find -type d 2>/dev/null | grep " dirstring " || echo "))
+     (concat "find -type d 2>/dev/null | grep " str " || echo "))
     '("" "working...")))
 
 (defun counsel-term-cd-action (cand)
@@ -109,6 +109,37 @@
             :action 'counsel-term-cd-action
             :unwind #'counsel-delete-process
             :caller 'counsel-term-cd))
+;-------------------------------------------------------------------------------
+
+
+;; Recursive regular file finder
+;-------------------------------------------------------------------------------
+(defun counsel-find-file-recursively-function (str)
+  "Use unix util find to recursively search for a subdir matching STR."
+  (if (< (length str) 2)
+      (counsel-more-chars 2)
+    (counsel--async-command
+     (concat "find .  2>/dev/null | grep " str " || echo "))
+    '("" "working...")))
+
+(defun counsel-find-file-recursively-action (candidate)
+  "If CANDIDATE is directory, cd to it.
+Else, open it."
+  (if (file-directory-p candidate)
+      (term-send-raw-string (concat " cd " candidate ""))
+    (find-file candidate)))
+
+(defun counsel-find-file-recursively ()
+  "Recursively find directories and cd to them from term."
+  (interactive)
+  (ivy-read "cd: "
+            'counsel-find-file-recursively-function
+            :dynamic-collection t
+            :action 'counsel-find-file-recursively-action
+            :unwind #'counsel-delete-process
+            :caller 'counsel-find-file-recursively))
+
+
 ;-------------------------------------------------------------------------------
 
 
