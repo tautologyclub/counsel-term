@@ -85,16 +85,29 @@
     (ivy-switch-buffer)))
 ;-------------------------------------------------------------------------------
 
-
 ;; Recursive dir-finder, subject to improvements of course :)
 ;-------------------------------------------------------------------------------
+(defcustom counsel-term-directory-command
+  (if (executable-find "fd")
+      "fd --type d --color=never --max-depth %d %s '%s'"
+    "find -type d -maxdepth %d %s '%s'")
+  "Command used by `counsel-term-cd-function' to find directories."
+  :group 'counsel-term
+  :type 'string)
+
+(defcustom counsel-term-directory-max-depth 10
+  "Maximum directory depth to search."
+  :group 'counsel-term
+  :type 'string)
+
 (defun counsel-term-cd-function (str)
-  "Use unix util find to recursively search for a subdir matching DIRSTRING."
-  (if (< (length str) 2)
-      (counsel-more-chars 2)
-    (counsel--async-command
-     (concat "find -type d 2>/dev/null | grep " str " || echo "))
-    '("" "working...")))
+  "Recursively search for a directory matching STR."
+  (counsel--async-command
+   (format counsel-term-directory-command
+           (if (> (length str) 2) counsel-term-directory-max-depth 1)
+           str
+           "."))
+  '("" "finding directories..."))
 
 (defun counsel-term-cd-action (cand)
   "Clear input, then cd to CAND using term."
@@ -104,11 +117,27 @@
 (defun counsel-term-cd ()
   "Recursively find directories and cd to them from term."
   (interactive)
-  (ivy-read "cd: " 'counsel-term-cd-function
+  (ivy-read "cd: " #'counsel-term-cd-function
             :dynamic-collection t
             :action 'counsel-term-cd-action
             :unwind #'counsel-delete-process
             :caller 'counsel-term-cd))
+
+(defun counsel-eshell-cd-action (cand)
+  "Change directory to CAND and refresh the prompt."
+  (eshell-kill-input)
+  (insert "cd " cand)
+  (eshell-send-input))
+
+(defun counsel-eshell-cd ()
+  "Recursively find directories and cd to them from eshell."
+  (interactive)
+  (ivy-read "cd: " #'counsel-term-cd-function
+            :dynamic-collection t
+            :action #'counsel-eshell-cd-action
+            :unwind #'counsel-delete-process
+            :caller 'counsel-term-cd))
+
 ;-------------------------------------------------------------------------------
 
 
@@ -117,7 +146,7 @@
 (defun counsel-find-file-recursively-function (str)
   "Use unix util find to recursively search for a subdir matching STR."
   (if (< (length str) 2)
-      (counsel-more-chars 2)
+      (ivy-more-chars)
     (counsel--async-command
      (concat "find .  2>/dev/null | grep " str " || echo "))
     '("" "working...")))
