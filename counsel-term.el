@@ -88,9 +88,11 @@
 ;; Recursive dir-finder, subject to improvements of course :)
 ;-------------------------------------------------------------------------------
 (defcustom counsel-term-directory-command
-  (if (executable-find "fd")
-      "fd --type d --color=never --max-depth %d %s '%s'"
-    "find -type d -maxdepth %d %s '%s'")
+  (cond
+   ((executable-find "fd")
+    "fd --type d --color=never --no-ignore --max-depth %s '%s'")
+   ((executable-find "find")
+    "find . -type d -maxdepth %s -iname '*%s*' 2>/dev/null | sed 's|^\\./||'"))
   "Command used by `counsel-term-cd-function' to find directories."
   :group 'counsel-term
   :type 'string)
@@ -100,25 +102,27 @@
   :group 'counsel-term
   :type 'string)
 
-(defun counsel-term-cd-function (str)
-  "Recursively search for a directory matching STR."
+(defun counsel-term-cd-function (pattern)
+  "Recursively search for a directory matching PATTERN.
+
+PATTERN is passed directly to `find' or `fd'."
   (counsel--async-command
    (format counsel-term-directory-command
-           (if (> (length str) 2) counsel-term-directory-max-depth 1)
-           str
-           "."))
+           (if (> (length pattern) 2) counsel-term-directory-max-depth 1)
+           pattern))
   '("" "finding directories..."))
 
 (defun counsel-term-cd-action (cand)
   "Clear input, then cd to CAND using term."
   (interactive)
-  (term-send-raw-string (concat "cd " cand "")))
+  (term-send-raw-string (concat "cd '" cand "'")))
 
 (defun counsel-term-cd ()
   "Recursively find directories and cd to them from term."
   (interactive)
   (ivy-read "cd: " #'counsel-term-cd-function
             :dynamic-collection t
+            :require-match t
             :action 'counsel-term-cd-action
             :unwind #'counsel-delete-process
             :caller 'counsel-term-cd))
@@ -126,7 +130,7 @@
 (defun counsel-eshell-cd-action (cand)
   "Change directory to CAND and refresh the prompt."
   (eshell-kill-input)
-  (insert "cd " cand)
+  (insert "cd '" cand "'")
   (eshell-send-input))
 
 (defun counsel-eshell-cd ()
@@ -134,6 +138,7 @@
   (interactive)
   (ivy-read "cd: " #'counsel-term-cd-function
             :dynamic-collection t
+            :require-match t
             :action #'counsel-eshell-cd-action
             :unwind #'counsel-delete-process
             :caller 'counsel-term-cd))
